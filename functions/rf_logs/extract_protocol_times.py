@@ -48,16 +48,5 @@ def extract_protocol_times(input_folder, keep_locs_and_adjs):
 
     return sequence_data
 
-input_folder = "/Users/softwaretester/Downloads/all_logs"
-
-sequence_data = extract_protocol_times(input_folder, keep_locs_and_adjs=True)
-
-lengths = []
-for i in sequence_data:
-    print(i)
-    lengths.append(len(sequence_data[i]))
-
-print(sum(lengths))
-
 
 
