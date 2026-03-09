@@ -5,7 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "main_database"
 version = "0.1.0"
-dependencies = []
+dependencies = [
+    "pydicom==2.4.4"
+]
 
 [project.optional-dependencies]
 dev = ["pytest"]
