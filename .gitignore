@@ -11,8 +11,9 @@ __pycache__/
 # Environment variables
 .env
 
-# Mac system files
+# Mac system files and settings
 .DS_Store
+build/
 
 # IDE settings
 .idea/
