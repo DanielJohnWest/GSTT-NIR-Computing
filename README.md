@@ -11,7 +11,7 @@ It is recommended that you use this GitHub directory with VS Code (which is free
 
 ⬇️ **Download the slides**
 
-[Download MRI Computing Team GitHub Guide](https://github.com/GSTT-MRI-Computing/main_database/readme-resources/GitHub_Guide.pdf)
+[Download MRI Computing Team GitHub Guide](readme-resources/GitHub_Guide.pdf)
 
 If you are not using either VS Code or PyCharm (not recommended), then please follow the following steps:
 
