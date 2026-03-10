@@ -1,4 +1,0 @@
-pydicom==2.4.4
-
-[dev]
-pytest
