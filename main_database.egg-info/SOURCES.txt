@@ -6,6 +6,7 @@ functions/dicoms/anonymise_dicom.py
 functions/filepaths/__init__.py
 functions/filepaths/get_files_as_list.py
 functions/list_manipulations/__init__.py
+functions/list_manipulations/add_list.py
 functions/list_manipulations/get_median.py
 functions/rf_logs/__init__.py
 functions/rf_logs/extract_protocol_times.py
