@@ -11,7 +11,7 @@ It is recommended that you use this GitHub directory with VS Code (which is free
 
 ⬇️ **Download the slides**
 
-[Download MRI Computing Team GitHub Guide](readme-resources/GitHub_Guide.pdf)
+[Download NIR Computing Team GitHub Guide](readme-resources/GitHub_Guide.pdf)
 
 If you are not using either VS Code or PyCharm (not recommended), then please follow the following steps:
 
@@ -35,7 +35,7 @@ cd GitHub
 Then, run:
 
 ```python
-git clone https://github.com/GSTT-MRI-Computing/main_database.git
+git clone https://github.com/GSTT-NIR-Computing/main_database.git
 ```
 
 Any new projects must be made inside the projects tab. All code needs to be modular, i.e. write as much of it as self-contained functions as possible. When you have written a function, save it as a file in the appropriate folder, under the functions directory.
