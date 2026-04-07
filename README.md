@@ -1,6 +1,6 @@
-# GSTT MRI Computing
+# GSTT NIR Computing
 
-Welcome to the MRI Computing GitHub! 
+Welcome to the NIR Computing GitHub! 
 
 ![](readme-resources/screenshot.jpg)
 
