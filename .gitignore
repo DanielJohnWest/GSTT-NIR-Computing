@@ -18,3 +18,6 @@ build/
 # IDE settings
 .idea/
 .vscode/
+
+# Python packaging junk
+*.egg-info/
