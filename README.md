@@ -47,8 +47,10 @@ python3 -m venv .venv
 
 source .venv/bin/activate
 
-pip3 install ."[dev]"
+pip3 install ../../"[dev]"
 ```
+
+As this points back to the .toml file that is in the base directory of this repository.
 
 Ensure that the main script is called main.py, and that it takes its functions from the functions folder, as this is where you will be saving all functions. 
 
