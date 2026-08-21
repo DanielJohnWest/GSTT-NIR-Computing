@@ -1,6 +1,7 @@
 import numpy as np
+from functions.relaxometry.calculate_roi_statistics import calculate_roi_statistics
 
-def test_calculate_roi_statistics_nine_rois():
+def test_calculate_roi_statistics():
 
     tmap = np.ones((100, 100))
 
