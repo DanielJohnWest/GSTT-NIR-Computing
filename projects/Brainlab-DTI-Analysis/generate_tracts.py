@@ -1,6 +1,6 @@
 import os
 import subprocess
-from functions import run
+from functions.spectroscopy import run
 
 def get_tract_path(command_parts):
     tract_path = None

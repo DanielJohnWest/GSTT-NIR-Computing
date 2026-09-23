@@ -5,7 +5,7 @@ import numpy as np
 import nibabel as nib
 from final_dcm import create_brainlab_object
 from tract_roi_match import roi_table
-from functions import (check_and_handle_directories, \
+from functions.spectroscopy import (check_and_handle_directories, \
     get_full_file_names, \
     register_pre_images, \
     add_reg_to, \
@@ -32,9 +32,9 @@ dependencies = {'mrtrix': False, 'fsl': False}
 dependencies = check_dependencies(dependencies)
 
 if dependencies['mrtrix'] and dependencies['fsl']:
-    from functions import run
+    from functions.spectroscopy import run
 else:
-    from functions import run_unknown as run
+    from functions.spectroscopy import run_unknown as run
 
 
 # Define data directories

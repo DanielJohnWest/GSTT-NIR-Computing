@@ -1,4 +1,4 @@
-from functions import run
+from functions.spectroscopy import run
 import subprocess
 import signal
 import os
