@@ -1,4 +1,4 @@
-from functions.spectroscopy import run
+from dti_utils import run
 import subprocess
 import signal
 import os
