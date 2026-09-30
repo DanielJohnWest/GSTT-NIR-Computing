@@ -1,0 +1,1 @@
+This is just a text file. It does not contain any image data to be read by pydicom so hopefully it gets skipped over!
