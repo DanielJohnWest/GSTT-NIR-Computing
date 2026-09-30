@@ -18,7 +18,6 @@ task = prompt_input('Which type of reconstruction would you like to perform: \n'
 '2. T2 Mapping Clinical\n'
 '3. T1 Mapping Multiple TI\n'
 '4. T1 Mapping Clinical\n', 1, 4)
- 
 field = prompt_input(' What is the field strength of the scanner: \n\n'
                 '1. 1.5T and below\n'
                 '2. 3T and above\n', 1, 2)
