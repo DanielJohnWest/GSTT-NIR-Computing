@@ -16,7 +16,7 @@ Bloch simulation of write_tse.py sequence (turbo spin echo, CPMG echo train).
   other echo pathways are dephased by the crushers. The script checks the CPMG condition.
   Lines are acquired out of k-space order, so they are sorted by ky before the FFT.
 
-T2* is modelled as T2 plus a reversible part T2' (1/T2* = 1/T2 + 1/T2'): each tissue's
+T2* is modeled as T2 plus a reversible part T2' (1/T2* = 1/T2 + 1/T2'): each tissue's
 isochromats get a Lorentzian spread of off-resonance, which a spin echo would refocus.
 Not modelled: B1 errors, diffusion, flow, noise. Relaxation during an RF pulse is applied after it.
 RF pulses stored as a few time points (e.g. block pulses) are resampled onto RF_RASTER.
@@ -315,7 +315,7 @@ def simulate(seq_params=None, tissues=None, n_dummy=None, plot=True):
     kspace = data.reshape(-1, p['n_x'])[lines]
     img = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(kspace)))
 
-    # Effective TE: time from the excitation to the echo that samples the centre of k-space.
+    # Effective TE: time from the excitation to the echo that samples the center of k-space.
     i0 = int(np.argmin(np.abs(kx) + np.abs(ky)))
     t_exc = np.asarray(t_exc)
     te_eff = float(t_adc[i0] - t_exc[t_exc <= t_adc[i0]].max())
