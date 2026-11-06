@@ -13,7 +13,7 @@ Bloch simulation of write_gre.py sequence.
   Step 2 is exact for a spoiled sequence like this one (phase encoding rewound every
   TR, constant net spoiler moment).
 
-T2* is modelled as T2 plus a reversible part T2' (1/T2* = 1/T2 + 1/T2'): each tissue's
+T2* is modeled as T2 plus a reversible part T2' (1/T2* = 1/T2 + 1/T2'): each tissue's
 isochromats get a Lorentzian spread of off-resonance, which a spin echo would refocus.
 Not modelled: B1 errors, diffusion, flow, noise. Relaxation during an RF pulse is applied after it.
 RF pulses stored as a few time points (e.g. block pulses) are resampled onto RF_RASTER.
