@@ -16,6 +16,7 @@ def main(
     slice_thickness: float = 3e-3,
     tr: float = 12e-3,
     te: float = 5e-3,
+    n_dummy: int = 0,
 ):
     """Create a basic gradient echo (GRE) sequence.
 
@@ -44,6 +45,10 @@ def main(
         Repetition time in seconds. Default is 12e-3.
     te : float, optional
         Echo time in seconds. Default is 5e-3.
+    n_dummy : int, optional
+        Number of dummy TRs played before the first phase-encode line, so the
+        magnetisation is in steady state: same RF and gradients, but no phase
+        encoding and no ADC. Default is 0.
 
     Returns
     -------
@@ -67,6 +72,7 @@ def main(
     seq = pp.Sequence(system)
 
     # Create slice selection pulse and gradient
+    # noinspection PyTypeChecker
     rf, gz, _ = pp.make_sinc_pulse(
         flip_angle=np.deg2rad(flip_angle_deg),
         duration=3e-3,
@@ -111,14 +117,22 @@ def main(
     rf_phase = 0
     rf_inc = 0
 
-    # Loop over phase encodes and define sequence blocks
-    for i_phase in range(n_y):
+    # Loop over phase encodes and define sequence blocks. The first n_dummy TRs (i_phase < 0)
+    # are dummy scans: same RF and gradients, so the magnetisation reaches steady state,
+    # but no phase encoding and no ADC. RF spoiling continues through them.
+    for i_phase in range(-n_dummy, n_y):
         rf.phase_offset = rf_phase / 180 * np.pi
         adc.phase_offset = rf_phase / 180 * np.pi
         rf_inc = divmod(rf_inc + rf_spoiling_inc, 360.0)[1]
         rf_phase = divmod(rf_phase + rf_inc, 360.0)[1]
 
         seq.add_block(rf, gz)
+        if i_phase < 0:  # dummy scan
+            seq.add_block(gx_pre, gz_reph)
+            seq.add_block(pp.make_delay(te_delay))
+            seq.add_block(gx)
+            seq.add_block(pp.make_delay(tr_delay), gx_spoil, gz_spoil)
+            continue
         gy_pre = pp.make_trapezoid(
             channel='y',
             area=phase_areas[i_phase],
@@ -133,16 +147,15 @@ def main(
 
     ok, error_report = seq.check_timing()
     if ok:
-        print('Timing check passed successfully')
+        print('Timing check passed successfully!')
     else:
-        print('Timing check failed. Error listing follows:')
-        [print(e) for e in error_report]
+        print('Timing check failed!')
 
     if test_report:
         print(seq.test_report())
 
     if plot:
-        seq.plot(time_range=(0.0, tr), stacked=True, show_guides=True)
+        seq.plot()
 
     seq.set_definition(key='FOV', value=[fov_x, fov_y, slice_thickness])
     seq.set_definition(key='Name', value='gre')
@@ -154,4 +167,6 @@ def main(
 
 
 if __name__ == '__main__':
-    main(plot=True, write_seq=True)
+    main(plot=True, write_seq=True, seq_filename='gre_pypulseq.seq')
+    main(plot=True, write_seq=True, seq_filename='gre_pypulseq_BH.seq', flip_angle_deg=29.5, tr=1, te=0.02, n_dummy=0)
+    main(plot=True, write_seq=True, seq_filename='gre_pypulseq_HB.seq', flip_angle_deg=90, tr=0.814, te=0.00419, n_dummy=1)

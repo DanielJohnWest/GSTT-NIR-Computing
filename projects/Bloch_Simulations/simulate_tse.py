@@ -44,9 +44,11 @@ SEQ_PARAMS: dict[str, Any] = dict(
     slice_thickness=5e-3,  # m
     te=12e-3,  # s, echo spacing (= TE of the first echo)
     tr=2000e-3,  # s
+    n_dummy=1,  # dummy TRs in the sequence (write_tse; 1 = PyPulseq original)
 )
 
-# Dummy TRs before acquisition. write_tse already plays one shot without the ADC, so 0 is as written.
+# Dummy TRs added in the simulation only (the sequence and .seq file are unchanged): a quick
+# way to try different numbers. Use this or n_dummy in SEQ_PARAMS, not both.
 N_DUMMY = 0
 
 # --------------------------------------------------------------------------
@@ -161,7 +163,9 @@ def play_list(seq: Sequence, n_dummy=0):
     p0, p1, p2 = (blocks[i].rf.phase_offset for i in rf_idx[:3])
     c2 = p2 - 2 * p1 + p0
     c1 = p1 - p0 - c2
-    dummies = [(b, True, p0 + c1 * n + c2 * n * (n + 1) / 2 if b.rf else None)
+    # Every pulse of a dummy TR is shifted by the same phase as its excitation, so the
+    # refocusing pulses keep their own phase relative to it (CPMG).
+    dummies = [(b, True, b.rf.phase_offset + c1 * n + c2 * n * (n + 1) / 2 if b.rf else None)
                for n in range(-n_dummy, 0) for b in first_tr]
     return dummies + played
 

@@ -20,6 +20,7 @@ def main(
     slice_thickness: float = 5e-3,
     te: float = 12e-3,
     tr: float = 2000e-3,
+    n_dummy: int = 1,
 ):
     """Create a turbo spin-echo (TSE) sequence.
 
@@ -52,6 +53,10 @@ def main(
         Echo time in seconds. Default is 12e-3.
     tr : float, optional
         Repetition time in seconds. Default is 2000e-3.
+    n_dummy : int, optional
+        Number of dummy excitations played before the first phase-encoded one, so the
+        magnetisation is in steady state: same RF and gradients, but no phase encoding and
+        no ADC. Default is 1 (as in the original PyPulseq example).
 
     Returns
     -------
@@ -62,14 +67,19 @@ def main(
     rise_time = 250e-6
 
     # Set system limits
+    rf_ringdown_time = 100e-6
+    rf_dead_time = 100e-6
+    adc_dead_time = 10e-6
+    grad_raster_time = 10e-6  # PyPulseq default
     system = pp.Opts(
         max_grad=32,
         grad_unit='mT/m',
         max_slew=130,
         slew_unit='T/m/s',
-        rf_ringdown_time=100e-6,
-        rf_dead_time=100e-6,
-        adc_dead_time=10e-6,
+        rf_ringdown_time=rf_ringdown_time,
+        rf_dead_time=rf_dead_time,
+        adc_dead_time=adc_dead_time,
+        grad_raster_time=grad_raster_time,
     )
 
     seq = pp.Sequence(system)
@@ -78,11 +88,11 @@ def main(
         rf_flip_deg = np.zeros(n_echo) + rf_flip_deg
 
     sampling_time = 6.4e-3
-    readout_time = sampling_time + 2 * system.adc_dead_time
+    readout_time = sampling_time + 2 * adc_dead_time
     t_ex = 2.5e-3
-    t_exwd = t_ex + system.rf_ringdown_time + system.rf_dead_time
+    t_exwd = t_ex + rf_ringdown_time + rf_dead_time
     t_ref = 2e-3
-    t_refwd = t_ref + system.rf_ringdown_time + system.rf_dead_time
+    t_refwd = t_ref + rf_ringdown_time + rf_dead_time
     t_sp = 0.5 * (te - readout_time - t_refwd)
     t_spex = 0.5 * (te - t_exwd - t_refwd)
     fsp_r = 1
@@ -93,6 +103,7 @@ def main(
 
     # Create excitation pulse and gradient
     flip_ex = np.deg2rad(90)
+    # noinspection PyTypeChecker
     rf_ex, gz, _ = pp.make_sinc_pulse(
         flip_angle=flip_ex,
         system=system,
@@ -102,7 +113,7 @@ def main(
         time_bw_product=4,
         phase_offset=rf_ex_phase,
         return_gz=True,
-        delay=system.rf_dead_time,
+        delay=rf_dead_time,
         use='excitation',
     )
     gs_ex = pp.make_trapezoid(
@@ -114,6 +125,7 @@ def main(
     )
 
     flip_ref = np.deg2rad(rf_flip_deg[0])
+    # noinspection PyTypeChecker
     rf_ref, gz, _ = pp.make_sinc_pulse(
         flip_angle=flip_ref,
         system=system,
@@ -124,7 +136,7 @@ def main(
         phase_offset=rf_ref_phase,
         use='refocusing',
         return_gz=True,
-        delay=system.rf_dead_time,
+        delay=rf_dead_time,
     )
     gs_ref = pp.make_trapezoid(
         channel='z',
@@ -155,7 +167,7 @@ def main(
         flat_time=readout_time,
         rise_time=rise_time,
     )
-    adc = pp.make_adc(num_samples=n_x, duration=sampling_time, delay=system.adc_dead_time, system=system)
+    adc = pp.make_adc(num_samples=n_x, duration=sampling_time, delay=adc_dead_time, system=system)
     gr_spr = pp.make_trapezoid(
         channel='x',
         system=system,
@@ -259,14 +271,15 @@ def main(
     te_train = t_ex + n_echo * t_ref + t_end
     tr_delay = (tr - n_slices * te_train) / n_slices
     # Round to gradient raster
-    tr_delay = system.grad_raster_time * np.round(tr_delay / system.grad_raster_time)
+    tr_delay = grad_raster_time * np.round(tr_delay / grad_raster_time)
     if tr_delay < 0:
         tr_delay = 1e-3
         warnings.warn(f'TR too short, adapted to include all slices to: {1000 * n_slices * (te_train + tr_delay)} ms')
     else:
         print(f'TR delay: {1000 * tr_delay} ms')
 
-    for i_excitation in range(n_ex + 1):
+    # The first n_dummy excitations are dummy scans (no phase encoding, no ADC).
+    for i_excitation in range(n_dummy + n_ex):
         for i_slice in range(n_slices):
             rf_ex.freq_offset = gs_ex.amplitude * slice_thickness * (i_slice - (n_slices - 1) / 2)
             rf_ref.freq_offset = gs_ref.amplitude * slice_thickness * (i_slice - (n_slices - 1) / 2)
@@ -278,8 +291,8 @@ def main(
             seq.add_block(gs3, gr3)
 
             for i_echo in range(n_echo):
-                if i_excitation > 0:
-                    phase_area = phase_areas[i_echo, i_excitation - 1]
+                if i_excitation >= n_dummy:
+                    phase_area = phase_areas[i_echo, i_excitation - n_dummy]
                 else:
                     phase_area = 0.0  # 0.0 and not 0 because -phase_area should successfully result in negative zero
 
@@ -299,7 +312,7 @@ def main(
                 )
                 seq.add_block(rf_ref, gs4)
                 seq.add_block(gr5, gp_pre, gs5)
-                if i_excitation > 0:
+                if i_excitation >= n_dummy:
                     seq.add_block(gr6, adc)
                 else:
                     seq.add_block(gr6)
@@ -312,10 +325,9 @@ def main(
 
     ok, error_report = seq.check_timing()
     if ok:
-        print('Timing check passed successfully')
+        print('Timing check passed successfully!')
     else:
-        print('Timing check failed. Error listing follows:')
-        [print(e) for e in error_report]
+        print('Timing check failed!')
 
     if test_report:
         print(seq.test_report())

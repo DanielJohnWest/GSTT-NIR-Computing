@@ -39,9 +39,11 @@ SEQ_PARAMS: dict[str, Any] = dict(
     slice_thickness=3e-3,  # m
     tr=12e-3,  # s
     te=5e-3,  # s
+    n_dummy=0,  # dummies to be used in write_gre
 )
 
-# Dummy TRs before acquisition (RF-spoiling phase continues through them). 0 = as write_gre.
+# Dummy TRs added in the simulation only (the sequence and .seq file are unchanged): a quick
+# way to try different numbers. Use this or n_dummy in SEQ_PARAMS, not both.
 N_DUMMY = 0
 
 # --------------------------------------------------------------------------
@@ -60,16 +62,16 @@ N_DUMMY = 0
 #   power 5.2), tubes 28.0 mm across on a 35.0 mm grid centred in the bottle, not rotated.
 # --------------------------------------------------------------------------
 TISSUES = {
-    'gel matrix':                dict(T1=0.846, T2=0.141, T2s=0.0700, PD=1.0, df=0.0, ellipse=(0.000, 0.000, 0.0599, 0.0610), power=5.2),
-    'I: med. post-GBCA myo':     dict(T1=0.430, T2=0.044, T2s=0.0369, PD=1.0, df=0.0, ellipse=(-0.035, 0.035, 0.014, 0.014)),
-    'F: med. native myo':        dict(T1=1.090, T2=0.048, T2s=0.0391, PD=1.0, df=0.0, ellipse=(0.000, 0.035, 0.014, 0.014)),
-    'C: long post-GBCA blood':   dict(T1=0.458, T2=0.189, T2s=0.0741, PD=1.0, df=0.0, ellipse=(0.035, 0.035, 0.014, 0.014)),
-    'H: long post-GBCA myo':     dict(T1=0.562, T2=0.045, T2s=0.0328, PD=1.0, df=0.0, ellipse=(-0.035, 0.000, 0.014, 0.014)),
-    'E: long native myo':        dict(T1=1.333, T2=0.050, T2s=0.0329, PD=1.0, df=0.0, ellipse=(0.000, 0.000, 0.014, 0.014)),
-    'B: native blood':           dict(T1=1.489, T2=0.243, T2s=0.0754, PD=1.0, df=0.0, ellipse=(0.035, 0.000, 0.014, 0.014)),
-    'G: short post-GBCA myo':    dict(T1=0.300, T2=0.044, T2s=0.0343, PD=1.0, df=0.0, ellipse=(-0.035, -0.035, 0.014, 0.014)),
-    'D: short native myo':       dict(T1=0.803, T2=0.048, T2s=0.0368, PD=1.0, df=0.0, ellipse=(0.000, -0.035, 0.014, 0.014)),
-    'A: short post-GBCA blood':  dict(T1=0.255, T2=0.155, T2s=0.0760, PD=1.0, df=0.0, ellipse=(0.035, -0.035, 0.014, 0.014)),
+    'gel matrix': dict(T1=0.846, T2=0.141, T2s=0.0700, PD=1.0, df=0.0, ellipse=(0.000, 0.000, 0.0599, 0.0610), power=5.2),
+    'I: med. post-GBCA myo': dict(T1=0.430, T2=0.044, T2s=0.0369, PD=1.0, df=0.0, ellipse=(-0.035, 0.035, 0.014, 0.014)),
+    'F: med. native myo': dict(T1=1.090, T2=0.048, T2s=0.0391, PD=1.0, df=0.0, ellipse=(0.000, 0.035, 0.014, 0.014)),
+    'C: long post-GBCA blood': dict(T1=0.458, T2=0.189, T2s=0.0741, PD=1.0, df=0.0, ellipse=(0.035, 0.035, 0.014, 0.014)),
+    'H: long post-GBCA myo': dict(T1=0.562, T2=0.045, T2s=0.0328, PD=1.0, df=0.0, ellipse=(-0.035, 0.000, 0.014, 0.014)),
+    'E: long native myo': dict(T1=1.333, T2=0.050, T2s=0.0329, PD=1.0, df=0.0, ellipse=(0.000, 0.000, 0.014, 0.014)),
+    'B: native blood': dict(T1=1.489, T2=0.243, T2s=0.0754, PD=1.0, df=0.0, ellipse=(0.035, 0.000, 0.014, 0.014)),
+    'G: short post-GBCA myo': dict(T1=0.300, T2=0.044, T2s=0.0343, PD=1.0, df=0.0, ellipse=(-0.035, -0.035, 0.014, 0.014)),
+    'D: short native myo': dict(T1=0.803, T2=0.048, T2s=0.0368, PD=1.0, df=0.0, ellipse=(0.000, -0.035, 0.014, 0.014)),
+    'A: short post-GBCA blood': dict(T1=0.255, T2=0.155, T2s=0.0760, PD=1.0, df=0.0, ellipse=(0.035, -0.035, 0.014, 0.014)),
 }
 
 # Isochromats per cycle of the per-TR spoiler twist through the slice. Higher = better
@@ -78,6 +80,7 @@ TISSUES = {
 ISO_PER_CYCLE = 256
 SLICE_EXTENT = 1.5  # simulate z within +/- SLICE_EXTENT * slice thickness (sinc side lobes)
 RF_RASTER = 1e-6  # s; integration step for RF shapes stored as a few time points (Pulseq default raster)
+
 
 # --------------------------------------------------------------------------
 # PHANTOM
@@ -94,9 +97,11 @@ def make_phantom(fov, n_x, n_y, tissues):
         label[np.abs((X - cx) / rx) ** n + np.abs((Y - cy) / ry) ** n <= 1] = i
     return X, Y, label
 
+
 def tissue_map(tissues, label, key):
     """Image of one tissue property (NaN in the background), for display."""
     return np.array([t[key] for t in tissues.values()] + [np.nan])[label]
+
 
 # --------------------------------------------------------------------------
 # GRADIENTS (Pulseq units: Hz/m, moments in 1/m)
@@ -117,6 +122,7 @@ def breakpoints(g):
         t, a = np.r_[t, g.delay + g.shape_dur], np.r_[a, g.last]
     return t, a
 
+
 def moment(bp, t_end: float) -> float:
     """Gradient area from the block start to t_end."""
     t, a = bp
@@ -126,6 +132,7 @@ def moment(bp, t_end: float) -> float:
     tt = np.r_[t[t < t_end], t_end]
     aa = np.interp(tt, t, a)
     return float(np.sum(0.5 * (aa[:-1] + aa[1:]) * np.diff(tt)))
+
 
 def rf_samples(rf) -> tuple[np.ndarray, np.ndarray]:
     """RF sample times (s, from the pulse delay) and complex B1 (Hz) on a uniform raster.
@@ -139,8 +146,10 @@ def rf_samples(rf) -> tuple[np.ndarray, np.ndarray]:
         t = tn
     return t, np.asarray(s)
 
+
 def is_excitation(b):
     return b.rf is not None and getattr(b.rf, 'use', 'excitation') != 'refocusing'
+
 
 # --------------------------------------------------------------------------
 # Sequence bookkeeping.
@@ -161,6 +170,7 @@ def play_list(seq: Sequence, n_dummy=0):
                for n in range(-n_dummy, 0) for b in first_tr]
     return dummies + played
 
+
 def net_moment_per_tr(seq: Sequence, slice_thickness):
     """Net z-moment of one TR; warns if TRs are not identically spoiled."""
     m = []
@@ -178,6 +188,7 @@ def net_moment_per_tr(seq: Sequence, slice_thickness):
               'so the tissue-level encoding used here may be inaccurate.')
     return float(abs(m[0, 2]))
 
+
 def quaternion_product(a, b):
     """a * b for quaternions stored as (w, x, y, z) along axis 0: rotation b, then a."""
     w1, x1, y1, z1 = a
@@ -186,6 +197,7 @@ def quaternion_product(a, b):
                      w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2,
                      w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
                      w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2])
+
 
 # --------------------------------------------------------------------------
 # BLOCH SIMULATION (tissue, z)
@@ -276,6 +288,7 @@ class BlochSim:
         print()
         return np.array(signal, dtype=complex).T
 
+
 # --------------------------------------------------------------------------
 # MAIN
 # --------------------------------------------------------------------------
@@ -308,6 +321,7 @@ def simulate(seq_params=None, tissues=None, n_dummy=None, plot=True):
         plot_results(tissues, label, kspace, img)
     return img, kspace, tissue_signal
 
+
 def plot_results(tissues, label, kspace, img):
     fig, ax = plt.subplots(1, 5, figsize=(18, 3.8))
     for a, (key, title) in zip(ax[:3], [('PD', 'PD'), ('T1', 'T1 (s)'), ('T2', 'T2 (s)')]):
@@ -323,6 +337,7 @@ def plot_results(tissues, label, kspace, img):
         a.set_yticks([])
     fig.tight_layout()
     plt.show()
+
 
 if __name__ == '__main__':
     simulate()
